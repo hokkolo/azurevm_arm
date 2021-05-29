@@ -2,6 +2,36 @@
     "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
     "contentVersion": "1.0.0.0",
     "parameters": {
+        "vmNetworkInterface": {
+            "type": "string",
+            "metadata": {
+                "description": "description"
+            }
+        },
+        "vmVirtualNetwork": {
+            "type": "string",
+            "metadata": {
+                "description": "description"
+            }
+        },
+        "vmVirtualNetworksub": {
+            "type": "string",
+            "metadata": {
+                "description": "description"
+            }
+        },
+        "webTraffic": {
+            "type": "string",
+            "metadata": {
+                "description": "description"
+            }
+        },
+        "nsgsshRuleAllow": {
+            "type": "string",
+            "metadata": {
+                "description": "description"
+            }
+        },
         "nsgName": {
             "type": "string",
             "metadata": {
@@ -35,7 +65,22 @@
         }
     },
     "functions": [],
-    "variables": {},
+    "variables": {
+        "sshPort": "22",
+        "httpPort": "80",
+        "httpsPort": "443",
+        "vmSize": "Standard_B1s",
+        "OSname": "testserver",
+        "adminUser": "sudoer",
+        "adminPass": "Q1w2e3re4tvcvbdf",
+        "distro": "UbuntuServer",
+        "osVer": "18.04-LTS",
+        "version": "latest",
+        "publisher": "Canonical",
+        "osDisk": "linuxserver-Disk",
+        "caching": "ReadWrite",
+        "createOption": "FromImage"
+    },
     "resources": [{
         "name": "[parameters('storageAccountName')]",
         "type": "Microsoft.Storage/storageAccounts",
@@ -72,32 +117,49 @@
         "properties": {
             "securityRules": [
                 {
-                    "name": "nsgRule1",
+                    "name": "[parameters('nsgsshRuleAllow')]",
                     "properties": {
-                        "description": "description",
+                        "description": "Allow ssh traffic",
                         "protocol": "Tcp",
                         "sourcePortRange": "*",
-                        "destinationPortRange": "22",
+                        "destinationPortRange": "[variables('sshPort')]",
                         "sourceAddressPrefix": "*",
                         "destinationAddressPrefix": "*",
                         "access": "Allow",
                         "priority": 100,
                         "direction": "Inbound"
+                    }                  
+
+                
+                },
+                {
+                    "name": "[parameters('webTraffic')]",
+                    "properties": {
+                        "description": "Allow http https traffic",
+                        "protocol": "Tcp",
+                        "sourcePortRange": "*",
+                        "destinationPortRanges": ["[variables('httpPort')]", "[variables('httpsPort')]"],
+                        "sourceAddressPrefix": "*",
+                        "destinationAddressPrefix": "*",
+                        "access": "Allow",
+                        "priority": 101,
+                        "direction": "Inbound"
                     }
                 }
+               
             ]
         }
     },
     {
-        "name": "ubuntuVM1-VirtualNetwork",
+        "name": "[parameters('vmVirtualNetwork')]",
         "type": "Microsoft.Network/virtualNetworks",
         "apiVersion": "2019-11-01",
         "location": "[resourceGroup().location]",
         "dependsOn": [
-            "[resourceId('Microsoft.Network/networkSecurityGroups', 'ubuntuVM1-nsg')]"
+            "[resourceId('Microsoft.Network/networkSecurityGroups', parameters('nsgName'))]"
         ],
         "tags": {
-            "displayName": "ubuntuVM1-VirtualNetwork"
+            "displayName": "linuxserver-VirtualNetwork"
         },
         "properties": {
             "addressSpace": {
@@ -107,11 +169,11 @@
             },
             "subnets": [
                 {
-                    "name": "ubuntuVM1-VirtualNetwork-Subnet",
+                    "name": "[parameters('vmVirtualNetworksub')]",
                     "properties": {
                         "addressPrefix": "10.0.0.0/24",
                         "networkSecurityGroup": {
-                            "id": "[resourceId('Microsoft.Network/networkSecurityGroups', 'ubuntuVM1-nsg')]"
+                            "id": "[resourceId('Microsoft.Network/networkSecurityGroups', parameters('nsgName'))]"
                         }
                     }
                 }
@@ -119,13 +181,13 @@
         }
     },
     {
-        "name": "ubuntuVM1-NetworkInterface",
+        "name": "[parameters('vmNetworkInterface')]",
         "type": "Microsoft.Network/networkInterfaces",
         "apiVersion": "2019-11-01",
         "location": "[resourceGroup().location]",
         "dependsOn": [
-            "[resourceId('Microsoft.Network/publicIPAddresses', 'ubuntuVM1-PublicIP')]",
-            "[resourceId('Microsoft.Network/virtualNetworks', 'ubuntuVM1-VirtualNetwork')]"
+            "[resourceId('Microsoft.Network/publicIPAddresses', parameters('publicIP'))]",
+            "[resourceId('Microsoft.Network/virtualNetworks', parameters('vmVirtualNetwork'))]"
         ],
         "tags": {
             "displayName": "ubuntuVM1-NetworkInterface"
@@ -137,10 +199,10 @@
                     "properties": {
                         "privateIPAllocationMethod": "Dynamic",
                         "publicIPAddress": {
-                            "id": "[resourceId('Microsoft.Network/publicIPAddresses', 'ubuntuVM1-PublicIP')]"
+                            "id": "[resourceId('Microsoft.Network/publicIPAddresses', parameters('publicIP'))]"
                         },
                         "subnet": {
-                            "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', 'ubuntuVM1-VirtualNetwork', 'ubuntuVM1-VirtualNetwork-Subnet')]"
+                            "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('vmVirtualNetwork'), parameters('vmVirtualNetworksub'))]"
                         }
                     }
                 }
@@ -153,44 +215,44 @@
         "apiVersion": "2019-07-01",
         "location": "[resourceGroup().location]",
         "dependsOn": [
-            "[resourceId('Microsoft.Network/networkInterfaces', 'ubuntuVM1-NetworkInterface')]"
+            "[resourceId('Microsoft.Network/networkInterfaces', parameters('vmNetworkInterface'))]"
         ],
         "tags": {
             "displayName": "ubuntuVM1"
         },
         "properties": {
             "hardwareProfile": {
-                "vmSize": "Standard_A2_v2"
+                "vmSize": "[variables('vmSize')]"
             },
             "osProfile": {
-                "computerName": "ubuntuVM1",
-                "adminUsername": "adminUsername",
-                "adminPassword": "adminPassword"
+                "computerName": "[variables('OSname')]",
+                "adminUsername": "[variables('adminUser')]",
+                "adminPassword": "[variables('adminPass')]"
             },
             "storageProfile": {
                 "imageReference": {
-                    "publisher": "Canonical",
-                    "offer": "UbuntuServer",
-                    "sku": "16.04-LTS",
-                    "version": "latest"
+                    "publisher": "[variables('publisher')]",
+                    "offer": "[variables('distro')]",
+                    "sku": "[variables('osVer')]",
+                    "version": "[variables('version')]"
                 },
                 "osDisk": {
-                    "name": "ubuntuVM1-OSDisk",
-                    "caching": "ReadWrite",
-                    "createOption": "FromImage"
+                    "name": "[variables('osDisk')]",
+                    "caching": "[variables('caching')]",
+                    "createOption": "[variables('createOption')]"
                 }
             },
             "networkProfile": {
                 "networkInterfaces": [
                     {
-                        "id": "[resourceId('Microsoft.Network/networkInterfaces', 'ubuntuVM1-NetworkInterface')]"
+                        "id": "[resourceId('Microsoft.Network/networkInterfaces', parameters('vmNetworkInterface'))]"
                     }
                 ]
             },
             "diagnosticsProfile": {
                 "bootDiagnostics": {
                     "enabled": true,
-                    "storageUri": "[reference(resourceId('Microsoft.Storage/storageAccounts/', toLower('ubuntuVM1storage'))).primaryEndpoints.blob]"
+                    "storageUri": "[reference(resourceId('Microsoft.Storage/storageAccounts/', toLower(parameters('storageAccountName')))).primaryEndpoints.blob]"
                 }
             }
         }

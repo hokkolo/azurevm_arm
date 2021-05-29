@@ -2,6 +2,18 @@
     "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
     "contentVersion": "1.0.0.0",
     "parameters": {
+        "vmNetworkInterface": {
+            "value": "linuxserver-networkinterface"
+        },
+        "vmVirtualNetwork": {
+            "value": "linuxserver-virtualnetwork"
+        },
+        "vmVirtualNetworksub": {
+            "value": "linuxserver-virtualnetworksub"
+        },
+        "webTraffic": {
+            "value": "nsgWebtrafficRule"
+        },
         "ubuntuVMName": {
             "value": "linuxserver" 
         },
@@ -14,10 +26,13 @@
             "value": "linuxserver" 
         },
         "publicIP": {
-            "value": "linuxserver_publicIP"
+            "value": "linuxserver-publicIP"
         },
         "nsgName": {
-            "value": "linuxserverNSG" 
+            "value": "linuxserve-NSG" 
+        },
+        "nsgsshRuleAllow": {
+            "value": "sshAllowRule"
         }
     }
 }
