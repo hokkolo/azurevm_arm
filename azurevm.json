@@ -2,6 +2,12 @@
     "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
     "contentVersion": "1.0.0.0",
     "parameters": {
+        "nsgName": {
+            "type": "string",
+            "metadata": {
+                "description": "description"
+            }
+        },
         "publicIP": {
             "type": "string",
             "metadata": {
@@ -59,7 +65,7 @@
         }
     },
     {
-        "name": "ubuntuVM1-nsg",
+        "name": "[parameters('nsgName')]",
         "type": "Microsoft.Network/networkSecurityGroups",
         "apiVersion": "2018-08-01",
         "location": "[resourceGroup().location]",

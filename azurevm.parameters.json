@@ -15,6 +15,9 @@
         },
         "publicIP": {
             "value": "linuxserver_publicIP"
+        },
+        "nsgName": {
+            "value": "linuxserverNSG" 
         }
     }
 }
